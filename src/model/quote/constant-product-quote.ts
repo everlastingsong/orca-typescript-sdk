@@ -1,7 +1,7 @@
 import { u64 } from "@solana/spl-token";
 import Decimal from "decimal.js";
 import { solToken } from "../../constants/tokens";
-import { ZERO, DecimalUtil, U64Utils, OrcaU64, Quote } from "../../public";
+import { ZERO, ONE, DecimalUtil, U64Utils, OrcaU64, Quote } from "../../public";
 import { QuotePoolParams } from "./quote-builder";
 
 /**
@@ -12,6 +12,16 @@ import { QuotePoolParams } from "./quote-builder";
  * y = outputTokenCount
  * k =  x * y
  */
+
+function calculateFee(inputTradeAmount: u64, feeNumerator: u64, feeDenominator: u64): u64 {
+  if (feeNumerator.eq(ZERO) || inputTradeAmount.eq(ZERO)) {
+    return ZERO;
+  }
+
+  const fee = inputTradeAmount.mul(feeNumerator).div(feeDenominator);
+  // minimum fee of one token
+  return fee.eq(ZERO) ? ONE : fee;
+}
 
 function getRate(inputTradeAmountU64: u64, params: QuotePoolParams): Decimal {
   if (inputTradeAmountU64.eq(ZERO)) {
@@ -44,13 +54,17 @@ function getPriceImpact(inputTradeAmount: u64, params: QuotePoolParams): Decimal
 
 function getLPFees(inputTradeAmount: u64, params: QuotePoolParams): u64 {
   const { feeStructure } = params;
-  const tradingFee = inputTradeAmount
-    .mul(feeStructure.traderFee.numerator)
-    .div(feeStructure.traderFee.denominator);
+  const tradingFee = calculateFee(
+    inputTradeAmount,
+    feeStructure.traderFee.numerator,
+    feeStructure.traderFee.denominator
+  );
 
-  const ownerFee = inputTradeAmount
-    .mul(feeStructure.ownerFee.numerator)
-    .div(feeStructure.ownerFee.denominator);
+  const ownerFee = calculateFee(
+    inputTradeAmount,
+    feeStructure.ownerFee.numerator,
+    feeStructure.ownerFee.denominator
+  );
 
   return new u64(tradingFee.add(ownerFee).toString());
 }

@@ -313,4 +313,24 @@ describe("Fee Structure", () => {
       new OrcaU64(new u64("999399195675"), params.outputToken.scale)
     );
   });
+
+  test("Minimum fee of one token", () => {
+    const params = Builder<QuotePoolParams>(stableQuotePoolParams).build();
+
+    const quote = builder.buildQuote(
+      params,
+      DecimalUtil.toU64(new Decimal("0.0001"), params.inputToken.scale)
+    );
+
+    expect(quote.getRate()).toEqual(new Decimal(0.98));
+    expect(quote.getPriceImpact()).toEqual(new Decimal(-1.030928));
+    expect(quote.getLPFees()).toEqual(new OrcaU64(new u64("2"), params.inputToken.scale));
+    expect(quote.getNetworkFees()).toEqual(new OrcaU64(new u64("10000")));
+    expect(quote.getMinOutputAmount()).toEqual(
+      new OrcaU64(new u64("97"), params.outputToken.scale)
+    );
+    expect(quote.getExpectedOutputAmount()).toEqual(
+      new OrcaU64(new u64("98"), params.outputToken.scale)
+    );
+  });
 });

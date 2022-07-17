@@ -122,6 +122,30 @@ test("Output Token Count is zero", () => {
   );
 });
 
+test("Minimum fee of one token", () => {
+  const params = Builder<QuotePoolParams>(defaultQuotePoolParams)
+    // 1,000,000 defaultUSDCToken = 10,000 defaultSOLToken
+    .inputToken(defaultQuotePoolParams.outputToken)
+    .inputTokenCount(new u64("1000000000000"))
+    .outputToken(defaultQuotePoolParams.inputToken)
+    .outputTokenCount(new u64("10000000000000"))
+    .build();
+
+  const quote = builder.buildQuote(
+    params,
+    DecimalUtil.toU64(new Decimal("0.0001"), params.inputToken.scale)
+  );
+
+  expect(quote.getRate()).toEqual(new Decimal(0.00979));
+  expect(quote.getPriceImpact()).toEqual(new Decimal(0.102040816));
+  expect(quote.getLPFees()).toEqual(new OrcaU64(new u64("2"), params.inputToken.scale));
+  expect(quote.getNetworkFees()).toEqual(new OrcaU64(new u64("10000")));
+  expect(quote.getMinOutputAmount()).toEqual(new OrcaU64(new u64("978"), params.outputToken.scale));
+  expect(quote.getExpectedOutputAmount()).toEqual(
+    new OrcaU64(new u64("979"), params.outputToken.scale)
+  );
+});
+
 describe("Slippage tolerance", () => {
   test("tolerance equal 0", () => {
     const params = Builder<QuotePoolParams>(defaultQuotePoolParams)
